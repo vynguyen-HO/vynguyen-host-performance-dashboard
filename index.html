@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Host performance – livestream</title>
+<style>
+:root{color-scheme:light dark;--font-anthropic-sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--font-anthropic-serif:Georgia,"Times New Roman",serif;
+--color-fg:#1f2328;--color-fg-muted:#6b7280;--color-bg:#f7f7f5;--color-panel:#ffffff;--color-border-line:#e3e3df;--color-ok:#2f855a;--color-warn:#b7791f;--color-bad:#c53030;
+--cds-gap-sm:8px;--cds-gap-md:12px;--cds-gap-lg:20px;--cds-pad-xs:4px;--cds-pad-sm:8px;--cds-pad-md:12px;--cds-pad-lg:16px;--cds-radius:10px;
+--cds-font-size-caption:12px;--cds-font-size-body:14px;--cds-font-size-heading:16px;--cds-font-size-title:28px;--cds-font-weight-medium:500;
+--cds-chart-muted:#cbd5e1;--cds-chart-grid:#ececea;--cds-chart-reference:#9ca3af;--cds-surface-popover:#fff;--cds-border:#d4d4d0;--cds-shadow-popover:0 4px 14px rgba(0,0,0,.12)}
+@media (prefers-color-scheme:dark){:root{--color-fg:#e8e8e6;--color-fg-muted:#9aa0a6;--color-bg:#1b1b1a;--color-panel:#242423;--color-border-line:#3a3a38;--color-ok:#68d391;--cds-chart-muted:#475569;--cds-chart-grid:#333331;--cds-chart-reference:#6b7280;--cds-surface-popover:#2c2c2a;--cds-border:#44443f}}
+body{margin:0;background:var(--color-bg);padding:24px}
+</style>
+
+<style>
+.hp{max-width:1200px;margin-inline:auto;font-family:var(--font-anthropic-sans);color:var(--color-fg);display:flex;flex-direction:column;gap:var(--cds-gap-lg)}
+.hp h1{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);margin:0}
+.hp h2{font-size:var(--cds-font-size-heading);font-weight:var(--cds-font-weight-medium);margin:0}
+.hp p{margin:0}
+.hp .sub{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)}
+.hp .take{font-size:var(--cds-font-size-body);line-height:1.5}
+.hp .take b{font-weight:500}
+.hp-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:var(--cds-gap-md)}
+.hp-card{background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-lg);display:flex;flex-direction:column;gap:var(--cds-gap-sm);min-width:0}
+.hp-card .lbl{color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)}
+.hp .big{font-family:var(--font-anthropic-serif);font-weight:400;font-size:var(--cds-font-size-title);font-variant-numeric:tabular-nums}
+.hp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,26rem),1fr));gap:var(--cds-gap-md)}
+.hp-chart{position:relative;min-height:300px}
+.hp-scroll{overflow:auto;max-width:100%}
+.hp-scroll.tall{max-height:420px}
+.hp table{border-collapse:collapse;width:100%;font-size:var(--cds-font-size-caption);font-variant-numeric:tabular-nums}
+.hp th,.hp td{padding:6px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--color-border-line)}
+.hp th:first-child,.hp td:first-child,.hp th.l,.hp td.l{text-align:left}
+.hp th{position:sticky;top:0;background:var(--color-panel);color:var(--color-fg-muted);font-weight:400}
+.hp th button{all:unset;cursor:pointer}
+.hp tr.thin td{color:var(--color-fg-muted)}
+.hp .bar{display:inline-block;height:8px;border-radius:4px;vertical-align:middle;margin-left:6px;background:var(--cds-chart-muted)}
+.hp .bar.up{background:var(--color-ok)}
+.hp .tip{position:absolute;pointer-events:none;background:var(--cds-surface-popover);border:1px solid var(--cds-border);border-radius:var(--cds-radius);box-shadow:var(--cds-shadow-popover);padding:var(--cds-pad-xs) var(--cds-pad-sm);font-size:var(--cds-font-size-caption);display:none;z-index:5;white-space:nowrap}
+.hp ul{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:4px;font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+.hp-filter{display:flex;flex-wrap:wrap;gap:var(--cds-gap-md);align-items:center}
+.hp-filter label{display:flex;gap:6px;align-items:center;color:var(--color-fg-muted);font-size:var(--cds-font-size-caption)}
+.hp-filter select,.hp-filter button{font:inherit;font-size:var(--cds-font-size-caption);color:var(--color-fg);background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:4px 8px}
+.hp-filter button{cursor:pointer}
+.hp tr.sel td{background:color-mix(in srgb,var(--color-fg) 7%,transparent)}
+.hp tbody.pick tr{cursor:pointer}
+.hp-tiles .hp-card:nth-child(1){background:color-mix(in srgb,#c4b5fd 24%,var(--color-panel))}
+.hp-tiles .hp-card:nth-child(2){background:color-mix(in srgb,#7dd3fc 24%,var(--color-panel))}
+.hp-tiles .hp-card:nth-child(3){background:color-mix(in srgb,#86efac 24%,var(--color-panel))}
+.hp-tiles .hp-card:nth-child(4){background:color-mix(in srgb,#fdba74 26%,var(--color-panel))}
+.hp-tiles .hp-card:nth-child(5){background:color-mix(in srgb,#f9a8d4 26%,var(--color-panel))}
+.hp th{background:color-mix(in srgb,#c4b5fd 16%,var(--color-panel))}
+.hp th.mega{background:color-mix(in srgb,#fdba74 30%,var(--color-panel))}
+.hp tr.sel td{background:color-mix(in srgb,#86efac 22%,var(--color-panel))}
+.hp .bar{background:#a5d8c0}
+.hp .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:baseline}
+.hp-filter{background:color-mix(in srgb,#7dd3fc 14%,var(--color-panel));border:1px solid var(--color-border-line);border-radius:var(--cds-radius);padding:var(--cds-pad-sm) var(--cds-pad-lg)}
+.hp .hp-scroll td:first-child{position:sticky;left:0;background:var(--color-panel)}
+.hp-tabs{display:flex;gap:var(--cds-gap-sm)}
+.hp-tab{font:inherit;font-size:var(--cds-font-size-body);color:var(--color-fg);background:var(--color-panel);border:1px solid var(--color-border-line);border-radius:999px;padding:6px 18px;cursor:pointer}
+.hp-tab[aria-pressed="true"]{background:color-mix(in srgb,#c4b5fd 40%,var(--color-panel));border-color:#a78bfa;font-weight:500}
+.hp [hidden]{display:none !important}
+.hp .pc{display:grid;grid-template-columns:repeat(2,1fr);gap:var(--cds-gap-md)}
+.hp .pc div{display:flex;flex-direction:column;gap:2px}
+.hp .pc .v{font-family:var(--font-anthropic-serif);font-size:22px;font-variant-numeric:tabular-nums}
+.hp .leg{display:flex;gap:var(--cds-gap-md);font-size:var(--cds-font-size-caption);color:var(--color-fg-muted)}
+</style>
+</head><body>
+
+<div class="hp" id="hp">
+<header>
+<h1>Host performance – livestream</h1>
+<nav class="hp-tabs"><button class="hp-tab" data-plat="all" type="button">Tổng quan</button><button class="hp-tab" data-plat="tiktok" type="button">TikTok</button><button class="hp-tab" data-plat="shopee" type="button">Shopee</button></nav>
+<p class="sub" id="updated"></p>
+<p class="sub" data-draw="sub_plat" data-source="slots sessions slots_shopee sessions_shopee">—</p>
+</header>
+<section class="hp-filter">
+<label>Từ ngày <select data-draw="f_from" data-source="sessions sessions_shopee" aria-label="Từ ngày"></select></label>
+<label>Đến ngày <select data-draw="f_to" data-source="sessions sessions_shopee" aria-label="Đến ngày"></select></label>
+<label class="fl-ch">Kênh <select data-draw="f_ch" data-source="slots sessions slots_shopee sessions_shopee" aria-label="Kênh"></select></label>
+<label class="fl-id">ID kênh <select data-draw="f_cid" data-source="sessions sessions_shopee" aria-label="ID kênh"></select></label>
+<label class="fl-host">Host <select data-draw="f_host" data-source="slots slots_shopee" aria-label="Host"></select></label>
+<button class="hp-reset" type="button">Xóa lọc</button>
+<span class="sub" data-draw="f_note" data-source="slots sessions slots_shopee sessions_shopee">—</span>
+</section>
+<section class="hp-overview">
+<div class="hp-tiles">
+<div class="hp-card"><span class="lbl">Total GMV</span><span class="big" data-draw="ov_gmv" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl">TikTok + Shopee, theo ca của host</span></div>
+<div class="hp-card"><span class="lbl">Số host</span><span class="big" data-draw="ov_hosts" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl">Host có ca live</span></div>
+<div class="hp-card"><span class="lbl">Số phiên</span><span class="big" data-draw="ov_sessions" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl">Phiên có ca của host</span></div>
+<div class="hp-card"><span class="lbl">Tổng giờ live</span><span class="big" data-draw="ov_hours" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl">Giờ lên sóng thực tế trong ca</span></div>
+<div class="hp-card"><span class="lbl">Avg. GMV/hour</span><span class="big" data-draw="ov_gph" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl">Total GMV ÷ tổng giờ live</span></div>
+</div>
+<div class="hp-grid">
+<div class="hp-card"><h2>TikTok</h2><p class="sub">Creator-attributed GMV</p><div class="pc">
+<div><span class="lbl">Total GMV</span><span class="v" data-draw="ov_tt_gmv" data-source="slots sessions slots_shopee sessions_shopee">—</span></div>
+<div><span class="lbl">Avg. GMV/hour</span><span class="v" data-draw="ov_tt_gph" data-source="slots sessions slots_shopee sessions_shopee">—</span></div>
+<div><span class="lbl">Số host</span><span class="v" data-draw="ov_tt_hosts" data-source="slots sessions slots_shopee sessions_shopee">—</span></div>
+<div><span class="lbl">Số phiên · giờ live</span><span class="v" data-draw="ov_tt_ses" data-source="slots sessions slots_shopee sessions_shopee">—</span></div></div></div>
+<div class="hp-card"><h2>Shopee</h2><p class="sub">Doanh số đơn đã đặt</p><div class="pc">
+<div><span class="lbl">Total GMV</span><span class="v" data-draw="ov_sp_gmv" data-source="slots sessions slots_shopee sessions_shopee">—</span></div>
+<div><span class="lbl">Avg. GMV/hour</span><span class="v" data-draw="ov_sp_gph" data-source="slots sessions slots_shopee sessions_shopee">—</span></div>
+<div><span class="lbl">Số host</span><span class="v" data-draw="ov_sp_hosts" data-source="slots sessions slots_shopee sessions_shopee">—</span></div>
+<div><span class="lbl">Số phiên · giờ live</span><span class="v" data-draw="ov_sp_ses" data-source="slots sessions slots_shopee sessions_shopee">—</span></div></div></div>
+</div>
+<div class="hp-card"><h2>Xếp hạng performance host</h2>
+<p class="sub">Avg GMV/giờ = tổng GMV ÷ tổng giờ live của host, theo kênh và khoảng ngày đang chọn. Dòng mờ là host dưới 10 giờ, mẫu nhỏ. Host live trúng ngày sale lớn sẽ có số cao hơn, nên muốn so cùng ngày hãy xem tab TikTok hoặc Shopee. Bấm tiêu đề cột để sắp xếp.</p>
+<div class="hp-scroll tall"><table data-source="slots sessions slots_shopee sessions_shopee">
+<thead><tr><th>#</th><th class="l"><button class="ov-sort" data-k="host">Host</button></th><th><button class="ov-sort" data-k="hours">Số giờ live</button></th><th><button class="ov-sort" data-k="sessions">Số phiên</button></th><th><button class="ov-sort" data-k="gph">Avg. GMV/giờ</button></th></tr></thead>
+<tbody data-draw="ov_tbody" data-source="slots sessions slots_shopee sessions_shopee"></tbody></table></div></div>
+<p class="sub">Tổng quan chỉ có số tổng và xếp hạng host. Bấm tab TikTok hoặc Shopee để xem ngày và ca chi tiết. Số GMV tính theo ca của host nên không gồm các ngày không có host (Crosslive).</p>
+</section>
+<div class="hp-detail">
+<p class="take"><span class="tk-lead">Các ngày sale lớn chiếm <b data-draw="tk_share" data-source="slots sessions slots_shopee sessions_shopee">—</b> tổng GMV, nên khi so sánh host hãy đối chiếu cùng ngày trong bảng performance theo ngày. </span>Host có GMV cao nhất là <b data-draw="tk_top" data-source="slots sessions slots_shopee sessions_shopee">—</b> (<span data-draw="tk_top_gmv" data-source="slots sessions slots_shopee sessions_shopee">—</span>).</p>
+
+<section class="hp-tiles">
+<div class="hp-card"><span class="lbl">Số host</span><span class="big" data-draw="k_hosts" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl">Có ca live trong bộ lọc</span></div>
+<div class="hp-card"><span class="lbl">Số phiên</span><span class="big" data-draw="k_sessions" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl">Phiên có ca của host đang chọn</span></div>
+<div class="hp-card"><span class="lbl">Tổng giờ live</span><span class="big" data-draw="k_hours" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl">Giờ lên sóng thực tế trong ca</span></div>
+<div class="hp-card"><span class="lbl">Total GMV</span><span class="big" data-draw="k_gmv" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl" data-draw="lbl_gmv" data-source="slots sessions slots_shopee sessions_shopee">—</span></div>
+<div class="hp-card"><span class="lbl">Avg. GMV/hour</span><span class="big" data-draw="k_gph" data-source="slots sessions slots_shopee sessions_shopee">—</span><span class="lbl">Total GMV ÷ tổng giờ live</span></div>
+</section>
+
+<section class="hp-grid">
+<div class="hp-card">
+<h2>Tổng quan theo host</h2>
+<p class="sub">Bấm tiêu đề cột để sắp xếp, bấm vào một dòng để lọc theo host đó. Dòng mờ là host dưới 10 giờ, mẫu nhỏ.</p>
+<div class="hp-scroll">
+<table data-source="slots sessions slots_shopee sessions_shopee">
+<thead><tr>
+<th><button class="hp-sort" data-k="host">Host</button></th>
+<th><button class="hp-sort" data-k="sessions">Số phiên</button></th>
+<th><button class="hp-sort" data-k="slots">Số ca</button></th>
+<th><button class="hp-sort" data-k="hours">Số giờ</button></th>
+<th><button class="hp-sort" data-k="gmv">Total GMV</button></th>
+</tr></thead>
+<tbody class="pick" data-draw="host_tbody" data-source="slots sessions slots_shopee sessions_shopee"></tbody>
+</table>
+</div>
+</div>
+<div class="hp-card"><h2>Total GMV theo host</h2><p class="sub">Host đang chọn được tô đậm.</p><div class="hp-chart" data-draw="chart_host" data-source="slots sessions slots_shopee sessions_shopee"></div></div>
+</section>
+
+<section class="hp-card">
+<h2>Performance của host theo ngày (GMV/giờ)</h2>
+<p class="sub">Mỗi ô là GMV/giờ của chính host đó trong ngày, tính từ GMV các khung giờ host live, không lấy trung bình của phiên. ★ là ngày có phiên sale lớn (GMV phiên từ 1 tỷ). Màu xanh đậm hơn nghĩa là GMV/giờ cao hơn so với các host khác cùng ngày. Rê chuột vào ô để xem số giờ và GMV. Chọn một host ở bộ lọc để chỉ xem host đó.</p>
+<div class="hp-scroll" data-draw="matrix" data-source="slots sessions slots_shopee sessions_shopee"></div>
+</section>
+
+<section class="hp-card">
+<h2>Chi tiết từng ca</h2>
+<div class="hp-scroll tall">
+<table data-source="slots sessions slots_shopee sessions_shopee">
+<thead><tr>
+<th>Ngày</th><th class="l">ID kênh</th><th class="l">Host</th><th class="l">Khung giờ</th><th>Số giờ</th><th>GMV</th><th>GMV/giờ</th>
+</tr></thead>
+<tbody data-draw="slot_tbody" data-source="slots sessions slots_shopee sessions_shopee"></tbody>
+</table>
+</div>
+</section>
+
+<section class="hp-card">
+<h2>Cách tính và giới hạn</h2>
+<ul>
+<li data-draw="note_src" data-source="slots sessions slots_shopee sessions_shopee">—</li>
+<li data-draw="note_gmv" data-source="slots sessions slots_shopee sessions_shopee">—</li>
+<li data-draw="note_scale" data-source="slots sessions slots_shopee sessions_shopee">—</li>
+<li>Khung giờ lấy theo lịch ca, cắt theo giờ live thực tế. Giờ bàn giao thật giữa các host chưa được đối chiếu với video replay.</li>
+<li>GMV trong một khung giờ còn chịu ảnh hưởng của sản phẩm, voucher, ads và lượng người xem lúc đó, nên không hoàn toàn là năng lực riêng của host.</li>
+<li data-draw="note_misc" data-source="slots sessions slots_shopee sessions_shopee">—</li>
+</ul>
+</section>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(function(){
+ const FILES={slots:'data/slots.json',sessions:'data/sessions.json',slots_shopee:'data/slots_shopee.json',sessions_shopee:'data/sessions_shopee.json'};
+ const DATA={}; let params={}; const draws={}, onData=[];
+ const run=(name)=>{ const fn=draws[name]; if(!fn) return; document.querySelectorAll('[data-draw="'+name+'"]').forEach(el=>{ try{ fn(el); }catch(e){ console.error(name,e); } }); };
+ const all=()=>{ onData.forEach(f=>{ try{ f(); }catch(e){ console.error(e); } }); Object.keys(draws).forEach(run); };
+ window.dash={
+  data:id=>({status:DATA[id]?'ok':'loading',data:DATA[id]||[]}),
+  params:()=>params,
+  setParams:o=>{ Object.entries(o).forEach(([k,v])=>{ if(v==null) delete params[k]; else params[k]=v; }); all(); },
+  resetParams:()=>{ params={}; all(); },
+  colors:['#a5b4fc','#f9a8d4','#86efac','#fcd34d','#7dd3fc','#fdba74','#c4b5fd','#5eead4'],
+  draw:(name,fn)=>{ if(fn===undefined) return run(name); draws[name]=fn; },
+  onData:fn=>{ onData.push(fn); },
+  __all:all,
+  __boot:()=>Promise.all(Object.entries(FILES).map(([k,u])=>fetch(u,{cache:'no-cache'}).then(r=>{ if(!r.ok) throw new Error(u+' ('+r.status+')'); return r.json(); }).then(j=>{ DATA[k]=j; })))
+   .then(()=>fetch('data/meta.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null))
+   .then(m=>{ if(m&&m.updated_at){ const el=document.getElementById('updated'); if(el) el.textContent='Dữ liệu cập nhật lần cuối: '+new Date(m.updated_at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'})+(m.range?' · '+m.range:''); } all(); })
+   .catch(e=>{ const box=document.getElementById('hp'); if(box) box.insertAdjacentHTML('afterbegin','<p class="sub">Không tải được dữ liệu: '+e.message+'. Kiểm tra thư mục data/ trong repo.</p>'); })
+ };
+ let t; window.addEventListener('resize',()=>{ clearTimeout(t); t=setTimeout(all,150); });
+})();
+</script>
+<script>
+const MEGA = 'Ngày sale lớn';
+const vn = (n,d=1) => n==null||isNaN(n) ? '–' : Number(n).toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d});
+const money = v => v==null ? '–' : (v>=1e9 ? vn(v/1e9,2)+' tỷ' : vn(v/1e6,1)+' tr');
+const dm = d => d.slice(8,10)+'/'+d.slice(5,7);
+const PAL=['#a5b4fc','#f9a8d4','#86efac','#fcd34d','#7dd3fc','#fdba74','#c4b5fd','#5eead4','#fda4af','#bef264','#93c5fd','#d8b4fe'];
+const okd = id => { const g = dash.data(id); return g.status==='ok' ? g.data : null; };
+
+const hpAgg = (slots) => { const H={};
+  slots.forEach(o => { const h=H[o.host]=H[o.host]||{host:o.host,days:{},slots:0,hours:0,gmv:0}; h.days[o.id+o.date]=1; h.slots++; h.hours+=o.hours; h.gmv+=o.gmv; });
+  return Object.values(H).map(h => ({host:h.host,sessions:Object.keys(h.days).length,slots:h.slots,hours:h.hours,gmv:h.gmv})); };
+
+const hpData = () => {
+  const plat=dash.params().plat==='shopee'?'shopee':'tiktok'; const sl=okd(plat==='shopee'?'slots_shopee':'slots'), se=okd(plat==='shopee'?'sessions_shopee':'sessions'); if(!sl||!se) return null;
+  const p=dash.params(); let from=p.from||'', to=p.to||''; if(from&&to&&from>to) [from,to]=[to,from];
+  const host=p.host||'', cid=p.cid||''; const S={}; se.forEach(s=>S[s.id+'|'+s.date]=s);
+  const inr = d => (!from||d>=from)&&(!to||d<=to), idok = i => !cid||i===cid;
+  const sessions=se.filter(s=>inr(s.date)&&idok(s.id)).map(s=>({id:s.id,date:s.date,kind:s.kind}));
+  const slotsAll=sl.filter(o=>inr(o.date)&&idok(o.id)&&S[o.id+'|'+o.date]).map(o => ({id:o.id,date:o.date,host:o.host,start:o.start,end:o.end,hours:Number(o.hours),gmv:Number(o.gmv),kind:S[o.id+'|'+o.date].kind}));
+  const slots=host?slotsAll.filter(o=>o.host===host):slotsAll;
+  let g=0,h=0,sg=0; const days={},hs={};
+  slots.forEach(o => { g+=o.gmv; h+=o.hours; days[o.id+o.date]=1; hs[o.host]=1; if(o.kind===MEGA) sg+=o.gmv; });
+  const names=[...new Set(sl.map(o=>o.host))].sort((a,b)=>a.localeCompare(b)); const color=n=>PAL[names.indexOf(n)%PAL.length];
+  const dates=[...new Set(se.map(s=>s.date))].sort(), ids=[...new Set(se.map(s=>s.id))].sort();
+  return {plat,from,to,host,cid,se,sl,names,color,dates,ids,sessions,slotsAll,slots,hosts:hpAgg(slotsAll),
+    kpi:{hosts:Object.keys(hs).length,sessions:Object.keys(days).length,hours:h,gmv:g,gph:h?g/h:null,share:g?sg/g:0}};
+};
+
+const selDraw = (name, build) => dash.draw(name, sel => { sel.replaceChildren(); const d=hpData(); if(!d) return; build(sel,d); });
+selDraw('f_from', (sel,d) => { sel.replaceChildren(new Option('Từ đầu',''), ...d.dates.map(x=>new Option(dm(x),x))); sel.value=dash.params().from??''; sel.onchange=()=>dash.setParams({from:sel.value||null}); });
+selDraw('f_to', (sel,d) => { sel.replaceChildren(new Option('Đến hết',''), ...d.dates.map(x=>new Option(dm(x),x))); sel.value=dash.params().to??''; sel.onchange=()=>dash.setParams({to:sel.value||null}); });
+selDraw('f_cid', (sel,d) => { sel.replaceChildren(new Option('Tất cả ID',''), ...d.ids.map(i=>new Option(i))); sel.value=dash.params().cid??''; sel.onchange=()=>dash.setParams({cid:sel.value||null}); });
+selDraw('f_host', (sel,d) => { const names=[...new Set(d.sl.map(o=>o.host))].sort((a,b)=>a.localeCompare(b));
+  sel.replaceChildren(new Option('Tất cả host',''), ...names.map(n=>new Option(n))); sel.value=dash.params().host??''; sel.onchange=()=>dash.setParams({host:sel.value||null}); });
+dash.draw('f_note', el => { const d=hpData(); if(!d){el.textContent='—';return;}
+  if(!dash.params().plat){ el.textContent=((d.from||d.to) ? (d.from?dm(d.from):'đầu')+' – '+(d.to?dm(d.to):'hết') : 'Tất cả ngày')+' · '+(dash.params().och||'TikTok + Shopee'); return; }
+  const r=(d.from||d.to) ? (d.from?dm(d.from):'đầu')+' – '+(d.to?dm(d.to):'hết') : 'Tất cả ngày';
+  el.textContent = r+' · '+(d.cid||'Tất cả ID')+' · '+(d.host||'Tất cả host')+' · '+d.sessions.length+' phiên'; });
+document.querySelector('.hp-reset').addEventListener('click', () => dash.resetParams());
+
+const K = {k_hosts:[k=>k.hosts,v=>vn(v,0)], k_sessions:[k=>k.sessions,v=>vn(v,0)], k_hours:[k=>k.hours,v=>vn(v,1)+' giờ'], k_gmv:[k=>k.gmv,money], k_gph:[k=>k.gph,v=>v==null?'–':money(v)+'/giờ'], tk_share:[k=>k.share,v=>vn(v*100,0)+'%']};
+Object.entries(K).forEach(([name,[get,fn]]) => dash.draw(name, el => { const d=hpData(); el.textContent = d ? fn(get(d.kpi)) : '—'; }));
+const lead=document.querySelector('.tk-lead');
+dash.onData(() => { const d=hpData(); const ovm=!dash.params().plat; document.querySelector('.hp-overview').hidden=!ovm; document.querySelector('.hp-detail').hidden=ovm; document.querySelectorAll('.fl-id,.fl-host').forEach(e=>{e.hidden=ovm;}); document.querySelectorAll('.fl-ch').forEach(e=>{e.hidden=!ovm;}); if(lead) lead.hidden = !d || !(d.kpi.share>0);
+  document.querySelectorAll('.hp-tab').forEach(b => b.setAttribute('aria-pressed', String((dash.params().plat||'all')===b.dataset.plat))); });
+document.querySelectorAll('.hp-tab').forEach(b => b.addEventListener('click', () => dash.setParams({plat:b.dataset.plat==='all'?null:b.dataset.plat, host:null, cid:null})));
+const T = {
+ tiktok:{sub:'Phiên live 01/08–28/10/2026 · kênh TikTok (lọc theo ID creator) · Creator-attributed GMV · tính theo ca của từng host', lbl:'Creator-attributed GMV',
+  src:'Nguồn: bảng LIVE của 4 kênh TikTok (@hannaholala, @hannahteam.review, @hannahteam.dep, @hannah.team.chot.don) trên Partner Center (Creator-attributed GMV, giờ live) và lịch live trên Google Sheet (tab Ecom Host Livestream có cột ID, bổ sung từ các tab lịch tháng), ghép theo ID kênh.',
+  gmv:'GMV của host là tổng GMV các mốc 15 phút nằm trong khung giờ host live. Mốc nằm giữa hai host được chia theo phần thời gian, nên mỗi ranh giới ca có thể lệch tối đa khoảng một mốc 15 phút.',
+  scale:'Tổng GMV mốc 15 phút thấp hơn GMV chính thức của phiên (khoảng 88–100%), nên GMV ca đã được nâng cùng một tỷ lệ cho mỗi phiên để cộng lại đúng GMV chính thức.',
+  misc:'Bộ lọc ngày áp dụng cho mọi bảng và biểu đồ; bộ lọc ID kênh và host áp dụng cho ô KPI, ma trận theo ngày và bảng ca. Các phiên thử dưới 30 phút (không có GMV) được bỏ qua. Dữ liệu đến 28/10 vì phiên ngày 29/10 đang diễn ra. Ngày Crosslive của @hannahteam.review, và tháng 10 của @hannahteam.dep, @hannah.team.chot.don không có host trong lịch nên không tính vào host. Ngày sale lớn là ngày phiên có GMV từ 1 tỷ, mình tự đặt ngưỡng này. Với @hannah.team.chot.don, lịch chỉ phủ một phần phiên nên tổng ca thấp hơn GMV phiên.'},
+ shopee:{sub:'Phiên live 01/08–28/10/2026 · Shopee · shop hannahteam1, hannahteam2, hannahteam3 (lọc theo ID) · GMV = doanh số đơn đã đặt · tính theo ca của từng host', lbl:'Doanh số đơn đã đặt',
+  src:'Nguồn: danh sách livestream và xu hướng bán hàng của 3 shop hannahteam1, hannahteam2, hannahteam3 trên Shopee Seller Centre (doanh số đơn đã đặt, giờ live) và lịch live trên Google Sheet (tab Ecom Host Livestream, ghép theo cột ID: hannahteam1 = Shopee Tích Vàng).',
+  gmv:'GMV của host là tổng doanh số đơn đã đặt từng phút (Shopee ghi mỗi 1 phút) nằm trong khung giờ host live, nên ranh giới ca khớp đến từng phút.',
+  scale:'Tổng doanh số từng phút thấp hơn doanh số phiên trên danh sách (khoảng 93–100%), nên GMV ca đã được nâng cùng một tỷ lệ cho mỗi phiên để cộng lại đúng doanh số phiên.',
+  misc:'Bộ lọc ngày áp dụng cho mọi bảng và biểu đồ; bộ lọc host áp dụng cho ô KPI, ma trận theo ngày và bảng ca. Dữ liệu đến 28/10 vì phiên ngày 29/10 đang diễn ra. Ngày sale lớn là ngày phiên có GMV từ 3 lần trung vị GMV phiên của từng ID, mình tự đặt ngưỡng này. Lịch ca hannahteam2 ngày 27/10 và hannahteam3 ngày 18/10 chỉ phủ khoảng 58% và 32% GMV phiên, nên tổng ca thấp hơn. Shopee còn có doanh số đơn được xác nhận, thấp hơn doanh số đơn đã đặt khoảng 5–20%, dashboard này dùng đơn đã đặt.'}};
+const tx = k => (T[dash.params().plat==='shopee'?'shopee':'tiktok'])[k];
+dash.draw('sub_plat', el => { el.textContent = !dash.params().plat ? 'Tổng quan 01/08–28/10/2026 · TikTok (Creator-attributed GMV) và Shopee (doanh số đơn đã đặt) · GMV tính theo ca của host' : tx('sub'); });
+[['lbl_gmv','lbl'],['note_src','src'],['note_gmv','gmv'],['note_scale','scale'],['note_misc','misc']].forEach(([n,k]) => dash.draw(n, el => { el.textContent = tx(k); }));
+const topHost = () => { const d=hpData(); if(!d||!d.hosts.length) return null; return [...d.hosts].sort((a,b)=>b.gmv-a.gmv)[0]; };
+dash.draw('tk_top', el => { const t=topHost(); el.textContent = t ? t.host : '—'; });
+dash.draw('tk_top_gmv', el => { const t=topHost(); el.textContent = t ? money(t.gmv) : '—'; });
+
+let sortKey='gmv', sortDir=-1;
+document.querySelectorAll('.hp-sort').forEach(b => b.addEventListener('click', () => {
+  const k=b.dataset.k; if(sortKey===k) sortDir=-sortDir; else {sortKey=k; sortDir = k==='host' ? 1 : -1;}
+  document.querySelectorAll('.hp th').forEach(th => th.removeAttribute('aria-sort'));
+  b.parentElement.setAttribute('aria-sort', sortDir>0?'ascending':'descending');
+  dash.draw('host_tbody');
+}));
+document.querySelector('[data-draw="host_tbody"]').addEventListener('click', ev => { const tr=ev.target.closest('tr[data-key]'); if(!tr) return;
+  dash.setParams({host: dash.params().host===tr.dataset.key ? null : tr.dataset.key}); });
+const hostCell = (tr, name, color, cls) => { const td=document.createElement('td'); const dot=document.createElement('span'); dot.className='dot'; dot.style.background=color; td.appendChild(dot); td.appendChild(document.createTextNode(name)); if(cls) td.className=cls; tr.appendChild(td); return td; };
+const cell = (tr, text, cls) => { const td=document.createElement('td'); td.textContent=text; if(cls) td.className=cls; tr.appendChild(td); return td; };
+dash.draw('host_tbody', tb => {
+  tb.replaceChildren(); const d=hpData(); if(!d) return;
+  const rows=[...d.hosts].sort((a,b)=>{const x=a[sortKey],y=b[sortKey]; return typeof x==='string' ? sortDir*x.localeCompare(y) : sortDir*(x-y);});
+  const mx=Math.max(1,...d.hosts.map(r=>r.gmv));
+  rows.forEach(r => { const tr=document.createElement('tr'); tr.dataset.key=r.host; tr.className=(r.hours<10?'thin ':'')+(d.host===r.host?'sel':'');
+   hostCell(tr,r.host,d.color(r.host)); cell(tr,vn(r.sessions,0)); cell(tr,vn(r.slots,0)); cell(tr,vn(r.hours,1));
+   const cg=cell(tr,money(r.gmv)); const bar=document.createElement('span'); bar.className='bar'; bar.style.width=(r.gmv/mx*48)+'px'; cg.appendChild(bar); tb.appendChild(tr); });
+});
+dash.draw('slot_tbody', tb => {
+  tb.replaceChildren(); const d=hpData(); if(!d) return;
+  d.slots.forEach(r => { const tr=document.createElement('tr'); tr.dataset.key=r.id+'_'+r.date+'_'+r.start+'_'+r.host;
+   cell(tr,dm(r.date)); cell(tr,r.id,'l'); hostCell(tr,r.host,d.color(r.host),'l'); cell(tr,r.start+'–'+r.end,'l'); cell(tr,vn(r.hours,2)); cell(tr,money(r.gmv)); cell(tr,money(r.gmv/r.hours)); tb.appendChild(tr); });
+});
+dash.draw('matrix', el => {
+  el.replaceChildren(); const d=hpData(); if(!d) return;
+  const kind={}; d.sessions.forEach(s=>{ if(s.kind===MEGA||!kind[s.date]) kind[s.date]=s.kind; }); const dates=[...new Set(d.sessions.map(s=>s.date))].sort();
+  const mx={}; { const A={}; d.slotsAll.forEach(o=>{const k=o.date+'|'+o.host; const c=A[k]=A[k]||{d:o.date,g:0,h:0}; c.g+=o.gmv; c.h+=o.hours;}); Object.values(A).forEach(c=>{mx[c.d]=Math.max(mx[c.d]||0,c.g/c.h);}); }
+  const M={}; d.slots.forEach(o => { const h=M[o.host]=M[o.host]||{}; const c=h[o.date]=h[o.date]||{g:0,h:0}; c.g+=o.gmv; c.h+=o.hours; });
+  const names=Object.keys(M).sort((a,b)=>a.localeCompare(b)); if(!names.length) return;
+  const t=document.createElement('table'); const hr=t.createTHead().insertRow();
+  const th0=document.createElement('th'); th0.textContent='Host'; hr.appendChild(th0);
+  dates.forEach(x => { const th=document.createElement('th'); th.textContent=dm(x)+(kind[x]===MEGA?' ★':''); if(kind[x]===MEGA) th.className='mega'; hr.appendChild(th); });
+  const tb=t.createTBody();
+  names.forEach(n => { const tr=tb.insertRow(); hostCell(tr,n,d.color(n));
+   dates.forEach(x => { const c=M[n][x]; const td=cell(tr, c?money(c.g/c.h):'–'); if(c){ td.title=vn(c.h,1)+' giờ · '+money(c.g); td.style.background='rgba(110,200,150,'+(0.1+0.45*(c.g/c.h)/mx[x])+')'; } else td.style.opacity='0.4'; }); });
+  el.appendChild(t);
+});
+
+const mkTip = (el) => { const t=document.createElement('div'); t.className='tip'; el.appendChild(t);
+ return {show:(ev,txt)=>{const r=el.getBoundingClientRect(); t.textContent=txt; t.style.display='block'; const x=Math.min(ev.clientX-r.left+12, r.width-t.offsetWidth-4); t.style.left=Math.max(4,x)+'px'; t.style.top=Math.max(4,ev.clientY-r.top-34)+'px';}, hide:()=>{t.style.display='none'}}; };
+const textW = (svg, s) => { const t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('font-size','11'); t.textContent=s; svg.appendChild(t); const w=t.getComputedTextLength(); t.remove(); return w; };
+dash.draw('chart_host', el => {
+  el.replaceChildren(); const d=hpData(); if(!d||!d.hosts.length) return;
+  const rows=[...d.hosts].sort((a,b)=>b.gmv-a.gmv); const W=el.clientWidth||400, bh=26, H=rows.length*bh+8;
+  const svg=d3.select(el).append('svg').attr('width','100%').attr('viewBox',`0 0 ${W} ${H}`).node();
+  const lw=Math.max(...rows.map(r=>textW(svg,r.host)))+10, ew=textW(svg,'00,00 tỷ')+8;
+  const x=d3.scaleLinear([0,d3.max(rows,r=>r.gmv)],[lw,W-ew]); const g=d3.select(svg).append('g'); const tip=mkTip(el);
+  rows.forEach((r,i) => { const y=i*bh+4, dim=d.host&&d.host!==r.host;
+   g.append('text').attr('x',lw-8).attr('y',y+bh/2).attr('dy','0.32em').attr('text-anchor','end').attr('font-size',11).attr('fill','currentColor').text(r.host);
+   g.append('rect').attr('x',lw).attr('y',y+3).attr('height',bh-8).attr('width',Math.max(1,x(r.gmv)-lw)).attr('rx',3).attr('fill',d.color(r.host)).attr('opacity',dim?0.35:1)
+    .on('mousemove',ev=>tip.show(ev,`${r.host}: ${money(r.gmv)} · ${vn(r.hours,1)} giờ · ${r.sessions} phiên`)).on('mouseleave',tip.hide);
+   g.append('text').attr('x',x(r.gmv)+5).attr('y',y+bh/2).attr('dy','0.32em').attr('font-size',11).attr('fill','var(--color-fg-muted)').text(money(r.gmv)); });
+});
+
+const ovData = () => {
+  const tl=okd('slots'), ts=okd('sessions'), sl=okd('slots_shopee'), ss=okd('sessions_shopee'); if(!tl||!ts||!sl||!ss) return null;
+  const p=dash.params(); let from=p.from||'', to=p.to||''; if(from&&to&&from>to) [from,to]=[to,from]; const och=p.och||'';
+  const inr = d => (!from||d>=from)&&(!to||d<=to), idok = i => !och||och==='tiktok'||och==='shopee'||i===och;
+  const tIds=new Set(ts.map(s=>s.id)), sIds=new Set(ss.map(s=>s.id)); const HS={};
+  const agg = (rows, on) => { const hosts={}, days={}; let g=0,h=0; if(on) rows.filter(o=>inr(o.date)&&idok(o.id)).forEach(o => { const gv=Number(o.gmv), hr=Number(o.hours); g+=gv; h+=hr; hosts[o.host]=1; days[o.id+o.date]=1; const x=HS[o.host]=HS[o.host]||{host:o.host,hours:0,gmv:0,days:{}}; x.hours+=hr; x.gmv+=gv; x.days[o.id+o.date]=1; }); return {g,h,hosts,days:Object.keys(days).length}; };
+  const t=agg(tl, !och||och==='tiktok'||tIds.has(och)), s=agg(sl, !och||och==='shopee'||sIds.has(och)); const all={}; Object.keys(t.hosts).concat(Object.keys(s.hosts)).forEach(k=>all[k]=1);
+  const hostRows=Object.values(HS).map(x=>({host:x.host,hours:x.hours,sessions:Object.keys(x.days).length,gph:x.hours?x.gmv/x.hours:0}));
+  return {och,t,s,hosts:Object.keys(all).length,g:t.g+s.g,h:t.h+s.h,days:t.days+s.days,hostRows,tIds:[...tIds].sort(),sIds:[...sIds].sort()};
+};
+const OV = {ov_gmv:o=>money(o.g), ov_hosts:o=>vn(o.hosts,0), ov_sessions:o=>vn(o.days,0), ov_hours:o=>vn(o.h,1)+' giờ', ov_gph:o=>o.h?money(o.g/o.h)+'/giờ':'–',
+  ov_tt_gmv:o=>money(o.t.g), ov_tt_gph:o=>o.t.h?money(o.t.g/o.t.h)+'/giờ':'–', ov_tt_hosts:o=>vn(Object.keys(o.t.hosts).length,0), ov_tt_ses:o=>vn(o.t.days,0)+' · '+vn(o.t.h,0)+' giờ',
+  ov_sp_gmv:o=>money(o.s.g), ov_sp_gph:o=>o.s.h?money(o.s.g/o.s.h)+'/giờ':'–', ov_sp_hosts:o=>vn(Object.keys(o.s.hosts).length,0), ov_sp_ses:o=>vn(o.s.days,0)+' · '+vn(o.s.h,0)+' giờ'};
+Object.entries(OV).forEach(([n,fn]) => dash.draw(n, el => { const o=ovData(); el.textContent = o ? fn(o) : '—'; }));
+
+dash.draw('f_ch', sel => { sel.replaceChildren(); const o=ovData(); if(!o) return;
+  sel.replaceChildren(new Option('Tất cả kênh',''), new Option('TikTok (tất cả)','tiktok'), new Option('Shopee (tất cả)','shopee'), ...o.tIds.map(i=>new Option('TikTok · '+i,i)), ...o.sIds.map(i=>new Option('Shopee · '+i,i)));
+  sel.value=dash.params().och??''; sel.onchange=()=>dash.setParams({och:sel.value||null}); });
+let ovKey='gph', ovDir=-1;
+document.querySelectorAll('.ov-sort').forEach(b => b.addEventListener('click', () => {
+  const k=b.dataset.k; if(ovKey===k) ovDir=-ovDir; else {ovKey=k; ovDir = k==='host' ? 1 : -1;}
+  document.querySelectorAll('.hp th').forEach(th => th.removeAttribute('aria-sort'));
+  b.parentElement.setAttribute('aria-sort', ovDir>0?'ascending':'descending'); dash.draw('ov_tbody'); }));
+dash.draw('ov_tbody', tb => { tb.replaceChildren(); const o=ovData(); if(!o) return;
+  const rows=[...o.hostRows].sort((a,b)=>{const x=a[ovKey],y=b[ovKey]; return typeof x==='string' ? ovDir*x.localeCompare(y) : ovDir*(x-y);});
+  rows.forEach((r,i) => { const tr=document.createElement('tr'); tr.dataset.key=r.host; if(r.hours<10) tr.className='thin';
+   cell(tr,String(i+1)); const td=hostCell(tr,r.host,'#c4b5fd','l'); td.firstChild.style.background=PAL[0]; cell(tr,vn(r.hours,1)); cell(tr,vn(r.sessions,0)); cell(tr,money(r.gph)+'/giờ'); tb.appendChild(tr); }); });
+</script>
+<script>dash.__boot();</script>
+</body></html>

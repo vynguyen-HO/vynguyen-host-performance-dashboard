@@ -1,0 +1,57 @@
+name: Refresh data
+
+on:
+  schedule:
+    # 12:00 trưa giờ Việt Nam (UTC+7) = 05:00 UTC. GitHub có thể trễ vài chục phút.
+    # Nếu cần 12 giờ đêm (00:00 giờ VN) thì đổi thành: "0 17 * * *"
+    - cron: "0 5 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: refresh-data
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test logic chia ca
+        run: |
+          cd scripts
+          python -m unittest test_slot_allocation
+          cd ..
+          python scripts/refresh_data.py --selftest
+
+      - name: Lấy dữ liệu và ghi vào data/
+        run: python scripts/refresh_data.py
+        env:
+          SHEET_ID: ${{ secrets.SHEET_ID }}
+          GOOGLE_SA_JSON: ${{ secrets.GOOGLE_SA_JSON }}
+          TIKTOK_APP_KEY: ${{ secrets.TIKTOK_APP_KEY }}
+          TIKTOK_APP_SECRET: ${{ secrets.TIKTOK_APP_SECRET }}
+          TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+          SHOPEE_PARTNER_ID: ${{ secrets.SHOPEE_PARTNER_ID }}
+          SHOPEE_PARTNER_KEY: ${{ secrets.SHOPEE_PARTNER_KEY }}
+          SHOPEE_REFRESH_TOKENS: ${{ secrets.SHOPEE_REFRESH_TOKENS }}
+
+      - name: Commit nếu dữ liệu đổi
+        run: |
+          git config user.name "dashboard-bot"
+          git config user.email "dashboard-bot@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then
+            echo "Không có thay đổi dữ liệu."
+          else
+            git commit -m "data: refresh $(date -u +%F)"
+            git push
+          fi
